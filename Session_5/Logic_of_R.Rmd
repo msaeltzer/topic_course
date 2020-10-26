@@ -1,0 +1,758 @@
+---
+title: "Introduction to R"
+author: "Marius Saeltzer"
+date: "07.10.2019"
+output: html_document
+---
+
+```{r}
+
+#install.packages('knitr')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Session I: The Logic of R
+
+Welcome to R. R is a high (that means highly predefined) programming language for statistical computing. It is not a software package like Stata or SPSS which simply allows data analysis. With the help of extensions, it can be used for computing, app development and many other things. In this script I will give an introduction to R from zero to the point it allows you to collect and analyze twitter data. To do so, I will give a basic conceptually guided introduction which gives you the tools to learn all features not covered in this course but are necessary for your personal research (or job).
+
+
+
+### Further 'reading'
+
+Learning R is a practical task. Most courses give you little more than an inspiration what you CAN do with it. Often you will have to learn by doing it. My best advice is: find a project and try to do it. If you have questions ask people you know (classmates and me) or the internet.
+
+https://stackoverflow.com/ offers answers to almost any questions you could ever ask.
+
+
+Practice: 
+
+www.datacamp.com
+  
+www.codeacademy.com
+
+
+## R and Studio
+
+R is a programming language but is wrapped in numerous other programs. What you see here is a so called markdown script, a way of reporting 
+and documenting knowledge.
+
+It is embedded in R Studio, a developer environment for R that gives us a lot of information and tools. In this course, we work with R Studio.
+
+
+script | environment 
+--------------------
+console| flexible window (help, plot, files)
+
+
+### Script
+
+A script is a primitive computer programme. It is a list of command
+executed in sequence. It is the cooking recipe of your data.
+
+It has parallels with:
+
+SPSS Syntax
+Stata Do File
+Excel Makro
+
+In R, you have to execute your script to get results. Please always safe them and keep them in good care. They are your ONLY way to interact with data and store everything you do. Having scripts allows you to replicate your results automatize processes and use the full potential of R.
+
+
+What you see here is a so called markdown script. Markdown scripts are nicely formatted r scripts. 
+
+Click on the upper right button with the green plus to create a classical script. Here is where you will do your programming. I will give you mainly markdowns for nice documentation.
+
+Using the 'run' function in a script allows you to
+As you can see, the code is embedded in these little 'chunks' as they are called. Once you installed knitr, we can run them by clicking on the little green triangle. 
+
+In markdown scripts we define little chunks in which you can write and run a script. Just think of the following chunk as your script.
+
+```{r}
+print('Hello, World')
+
+```
+
+
+In a script, you can run by pressing ctrl + enter (in windows) which runs the whole script or you can just highlight the parts of the script you want to run.
+
+
+It moves from script to console
+
+
+  script | environment 
+  --||----------------
+    \/    
+  console| flexible window (help, plot, files)
+
+
+If you want things not to be counted by the console, put them in
+using: #
+
+```{r}
+# I am a comment: I say 
+print('Hello, World')
+
+```
+
+
+### Console
+
+In mardown scripts, R Studio constructs a little console under the code chunk. You can open the console here by reopening the minimized window below. In normal scripts, the console is your main way to look at data.
+
+Whatever you put in the console is not permanent. This is why I suggest never directly writing in the console. Stuff will be lost. Write in the script whatever you want to keep.
+
+
+
+
+#### Errors and Warnings
+
+If something goes wrong (and it will, trust me) R will tell you by printing either an Error or a Warning
+
+Errors will stop the execution of the CURRENT command, not the whole script (as in stata)
+
+Warnings tell you if R thinks you did something unintended, but will still execute the code. 
+
+Errors are often very cryptic in R. We will talk about how to deal with them in the course.
+
+
+### Help Panel
+
+The help panel to the bottom right contain a number of useful features, but more on that later.
+
+```{r}
+?print
+```
+
+
+## Packages 
+
+
+
+The help panel also contains your available packages. As I mentioned, R is an open source programming language and anybody who wants to contribute can formulate packages out of his code. Packages are like little expansions of R and they import numerous functionalities in form of new functions. 
+
+If you want to get a package in the first place, run
+
+```{r}
+#install.packages('knitr')
+```
+
+after that, please do not run again but set a hashtag in front, so it will not be run again.
+
+Important: with install packages the name is case sensitive and has to be put in "" or ''
+
+Once installed it has to be activated in every R session, because often packages annoy one another ;)
+
+
+For example: the introductory data sets used in most introductions:
+```{r}
+library(car)
+```
+In the normal Rstudio, plots (and their options) are shown here.
+
+
+### Environment 
+
+To your right hand side, you find the environment It stores objects, values and functions you create. To understand what this means, we will learn basic operations and concepts in the next section.
+
+## The Grammar of R
+
+Sometimes it looks like programming is meaningless gibberish. To understand what is in front of you it makes sense to have a glossary what these signs and numbers all mean:
+
+
+Comments #  
+
+  - Anything written after a # will be comment
+  
+Values  "1",1, TRUE, FALSE
+
+  - All R does is counting values. There are 3 basic types: Numbers, Strings, Logic
+  
+  
+Operations + * - / ^
+
+  - They connect values to mathematical operations
+
+Logic > < | !
+
+  - and compares them using logic operators. Intuition: operators DO, while logic ops ASK. They return always logical values TRUE or FALSE
+while operators return numeric values. 
+
+Objects <- [] $ @ 
+  
+  - Objects are the form of values in R. Any value can be assigned an object using <- or extracted from an object using []. List objects can use the $ operator and some high level objects might use @ (this is super advanced)
+ 
+Functions () ~
+
+  - Function take in a value and return something for it. They are complex operators. Functions are found in baseR, packages will add new ones and you can even write your own. Any function will use this paranthesis and maybe the formula notation ~
+
+Control {}
+  - Anything related to programming will be use these parantheses 
+
+tidyr %>%   <- if you see this, run
+
+package operations :: , :::
+
+
+Knowing the meaning of these keys means understanding R. Basically, anything in R can be expressed with these 18 elements.
+
+
+## Basic Logic
+
+R is a functional, object oriented programming language for statistical computing. In other words it is about math. It computes. Little else. Everything R does is asking an infinite sequence of TRUE and FALSE, 1 and 0. Remember that and you will avoid typical mistakes of social sciences. 
+
+Rule 1: the computer does not know what your data means, only how it can be displayed in 0 and 1. 
+
+Because of this rule, we will start not with a data set, but learn how to code on artificial values we create for ourselves.
+
+### Values "1",1,T,F
+
+R can understand a limited amount of information, mainly values. It can store, organize and compute them. Nothing else. It knows 2 main data types (plus a few subsidiary ones) 
+
+#### Data Types
+
+Data has different amounts of information. Numeric data is the most informative for a computer, character the least informative. There are 4 classes:
+  
+  Numeric - Numbers 
+  Integer - Numeric with only full numbers (1,2,3,4)
+    Logical - True or False, is treated as integer
+  Character - String of letters 
+  
+Anything else written in R code must either be a function or an object.
+  
+```{r}
+
+
+5 
+
+T
+
+F
+
+'hello, i am a string' 
+
+```
+
+You can see, these data types are highlighted depending on their type: some are computable.
+
+
+#### Operations */+-^
+
+```{r}
+
+5 * 6
+
+5 + 5
+
+5 - 6
+
+3 / 2
+
+2^3
+
+```
+
+You can try multiplying a character
+
+```{r}
+#'hello, i am a string' *5
+```
+
+but won't work.
+
+
+It will assume you are talking about an object.
+
+### Objects
+
+the <- 
+
+By far the most important element of R: the assignment arrow allows to turn something into an object which you find in the so called enviroment. 
+
+script -> environment 
+--------------------
+console| flexible window (help, plot, files)
+
+#### Calling Objects 
+
+By using the ARROW, you can ASSIGN an object to the environment for further use. You can give it all names that are not VALUES.
+
+```{r}
+x<-3
+
+x*3
+
+```
+
+To call an object, just use it's name. 
+
+### Functions 
+
+Braces are very important in R.
+
+Whatever stand before them is a function. Whatever stand inside them is an argument. 
+
+Every operation in R that does not slice an object or is a basic operation is basically a function. 
+
+It is actually like functions in math y=f(x) does f to argument x to result in y.
+
+
+the always follow the structure 
+
+
+  name(arg1,arg2,arg3)
+
+If you want to find out what these arguments are, just use
+
+```{r}
+?mean
+```
+
+From a simple mean to hierarchichal regression or an API call. Everything is a function. 99% of errors (that arent typos) are caused by passing the wrong object to a function.
+
+
+```{r}
+a<-'5'
+as.numeric(a)
+
+b<-'Hey'
+as.numeric(b)
+
+```
+
+As you can see, we assign
+
+
+### Creating Objects using Functions
+
+
+For example, you can bind together values into an object, a so called vector:
+
+
+```{r}
+
+c<-5
+c<-as.character(c)
+
+```
+
+
+We can also combine values using functions
+```{r}
+c(1,2,3)
+ 
+v<-c(1,2,3)
+ 
+v<-c(3,2,1)
+
+```
+
+There are three basic classes of objects which can store values of some sort or another. 
+
+
+#### Vectors
+
+
+Vectors are elementary, since lines and rows in a dataset are vectors
+
+
+```{r}
+
+v*3
+
+v+2
+
+v<-c(v,3)
+```
+
+Vectors do respond to operations every value at a time. If you want to do vector math in the sense of skalar operations, there are other ways.
+
+
+
+
+#### Matrices and Arrays
+
+Matrices have two dimensions and therefore coordinates.
+
+```{r}
+
+ m<-matrix(nrow=3,ncol=2,c(3,4,3,4,5,6),byrow=T)
+ v1<-c(1,2,3)
+ ## adding new columns
+ m<-cbind(m,v1)
+```  
+ 
+Objects are not functions, but can be used by functions or created by functions.
+
+```{r} 
+ ## adding new rows
+ m<-rbind(m,v1)
+ 
+ m1<-rbind(m,m)
+```  
+
+Vectors or matrices can be useful to store data, and even do so in a way that reminds of data sets. But they are limited to containing data of the same type, which is very important. Because they contain data of one kind, functions can be applied to all values they contain in the same way. If you would have a vector of numbers with a single character, the computer would not know what to do with it when he is supposed to compute the mean. But of course, data of different kinds has to be comined in a single data object, we will learn later on how. 
+
+
+### Indexing 
+
+Let us now look a little deeper into the object. There are two ways to access a variable.
+
+Now this is a little bit strange compared to Stata. 
+You cann call elements of any object by its coordinates. For a one dimensional objects (as a vector) you can tell the computer to return the fifth element.
+
+```{r}
+v[2]
+```
+
+the Brackets [] are used for INDEXING. Whatever stands in these brackets is a coordinate inside an object. 
+
+But you can also do this with data frames. Here on the other hand we have two dimensions, rows and columns.
+
+The [,] is a two dimensional COORDINATE. Any number before the , is rows, behind the comma is columns.
+
+```{r}
+
+m[,1]
+m[2,]
+m[1,2]
+
+```
+In R, we can chain indexors as we want, as long as we keep some rules.
+
+for example, we can write 
+```{r}
+
+m[1,2]
+#like
+m[,2][1]
+
+```
+Read this like: first, go to m's second column, than go to the first element of the result. Why would we do that? Well, in matrices it makes no sense, because every coordinate has 2 positions which define one another. But lists are like trees, not rectangular.
+
+Now we see that R can be used to create and manipulate objects which contain values. In the end, all data operations can be reduced to this. But to do statstics, we will want to read in real data.
+
+## Logical Conditions
+
+As I indicated, TRUE and FALSE are values, also, They are probably the most important ones, because implicitely indexing and subsetting are expression of TRUE and FALSE.
+
+```{r}
+1>3
+2<1
+2==(4/2)
+```
+
+
+I give you a simple example relating to our favorite vector.
+
+You can index: 
+
+```{r}
+v
+v[3]
+```
+
+As you can see, we can use this to specifcy which variable and row we want. But what if we want to select by VALUE?
+
+We can ask the computer: is a value of v 1? We use the logical operators.
+
+```{r}
+v==1 # is equal?
+
+v<2 # smaller
+
+v>3 # greater
+```
+Even better, we can combine these two ways of dealing with a vector.
+
+```{r}
+v[v==1] # is equal?
+
+v[v<3] # smaller
+
+v[v>0] # greater
+```
+
+The index selector [] can be applied to the value set selected because implicitely, v>3 returns a TRUE or FALSE for any value of v.
+
+```{r}
+sel<-v<3
+
+sel
+
+v[sel]
+
+```
+
+
+Based on this logic, we can identify elements on which to apply a function, indexing or a subset. 
+
+```{r}
+
+abc<-m[m[,3]==1,]
+
+```
+What happenend?
+
+We spoke to object m
+
+  then said: select elements rowwise (before comma)
+  
+then gave a logical expression: 
+m[,3]==1 
+
+You can dissect these elements and run them independently. Just mark m[,3]==1 and press ctrl+enter!
+
+```{r}
+m[ m[,3]==1 ,]
+
+```
+So the selector tells the data frame for every row whether to include or not.
+
+Here we have a very cool feature of R. Instead of having to subset and reload every time we want to return, we can just create an additional object out of the subset.
+
+You can do this with anything you can express as true/false!
+
+```{r}
+mall<-m[,colSums(m)==nrow(m)]
+
+```
+However, these numbers are still very abstract. In the end this is all the computer sees. But for us humans it is nice to have non-value type of information. 
+
+
+## Session II: Lists, Dataframes and Datatypes
+
+
+Here we see, that we can make the structure ever more complicated like storing a list in a list and so on. This is how you create complicated data structures as in relational databases or xmls.
+
+```{r}
+l2<-list(v,m)
+
+str(l2)
+```
+
+The most complicated object to access is again, the list
+
+Above, we stored a matrix and a list in l2. Let's get them out again.
+
+```{r}
+
+str(l2)
+
+l2[1]
+
+l2[2]
+
+
+```
+
+Now, we are in the first level of the list. But how do we get into the next one?
+
+In R, we can chain indexors as we want, as long as we keep some rules.
+
+for example, we can write 
+```{r}
+
+m[1,2]
+#like
+m[,2][1]
+
+```
+Read this like: first, go to m's second column, than go to the first element of the result. Why would we do that? Well, in matrices it makes no sense, because every coordinate has 2 positions which define one another. But lists are like trees, not rectangular.
+
+
+```{r}
+
+l3<-list(l2,l2,'Barbara Bush')
+
+str(l3)
+
+```
+
+
+```{r}
+
+l3[3] # ist just a character
+
+l3[2] # is again a list of lists. Now lets go down to my toolbox
+
+l3[1][1][2] # does not work! 
+
+```
+
+The reason is that the computer has to open the list up beforehand. So if you want to go into a list of lists, you have to put the numbers in double brackets.
+
+```{r}
+
+l3[[1]][[1]][2]
+
+```
+
+## the $ Operator
+
+Lists, in contrast to matrices are formed by numerous objects that need to have no connection. You structure them, you can give them names.
+
+Names are attributes we can call directly using the $ operator. This is very usefull for next step, so be patient.
+
+```{r}
+names(l3)
+
+names(l3)<-c("l2","l2","barbara")
+
+
+l3$barbara
+
+```
+
+Now, since we know that we can give a list names and store all kinds of information inside it, we have everything we need to construct a classical data set with strings and numbers.
+
+
+### Dataframes
+
+Data sets are stored in R as so called data.frames.
+
+As the title says, they FRAME the raw data in some way. They add several new features, like names. We will now turn our matrix into a data frame. 
+
+```{r}
+
+df<-as.data.frame(m)
+
+```
+
+Data frames are typical data structures as you would know them from Stata.
+
+Normally, you will look at data by calling their name in the console as in 
+
+```{r}
+df
+```
+
+Dataframes are often to large and disorganized to do so. In Rstudio, you can view it clicking it. It will open a tab you can close once you are done.
+
+We can basically apply the same index operations to data.frames as to matrices, by speaking to their 2-dimensional structure.
+
+We can extract variables as usual.
+
+```{r}
+m4<-df[4,]
+```
+
+As you can see, data frames look a lot like matrices but they have a number of distinguishing features. First it shows that they do not have 2 'dimensions' any more but observations and variables. This is analogous but closer to stata speak.
+
+You can also click on the little blue arrowed dot in front of it to unfold its so called attributes.
+
+Here you can see that it is really not a matrix, but a list. Lists are the storage object of a programming language and they exist in most programming languages For the pourpose of this session it is enough to know that in a list you can store any kind of stuff. 
+
+A dataframe is a list, while being treated as a matrix mathematically is actually a special kind of list that can store any form of data.
+
+If you will, the data.frame is data
+
+              1 0 0 1
+              1 1 1 0
+              0 1 0 1
+
+Plus a frame of meaning, like
+  names
+  levels of variables (such as gender)
+
+
+#### Names
+
+The difference is that in Stata, the variable name is sufficient to speek to a variable. In R, it is not because you can have many objects at once. So instead, we can ask the computer which variables are in each object.
+
+```{r}
+
+names(df)
+
+```
+
+As we can see here, this does not have names yet. Let's change this
+```{r}
+names(df)<-c("Biology","Chemistry","English")
+```
+
+Using the $ operator, we can access variables based on their name attribute instead of their index.
+
+```{r}
+df$Biology
+
+
+
+```
+
+As you can see, the $ operator stands between the object and the variable name. In reality, screenname is just an object within an object. 
+
+
+## New Variables 
+
+Now as we have the ability to story all kinds of information, we can add an additional variable.
+
+
+```{r}
+
+df$gender_num<-c(1, 0, 1, 0)
+
+```
+
+But this is of course not really the case. Since gender is a categorical variable, we should treat it as such. We recode it into a character.
+
+
+The ifelse command follows the logic of arguments and logic
+
+ifelse(condition,do if true,do if false)
+
+
+```{r}
+
+df$gender<-ifelse(df$gender_num==1,'Female','Male')
+
+```
+
+Go on! mark the condition I wrote and run it independently!
+
+
+```{r}
+df$gender_num==1
+df$gender==1
+
+```
+Condition is just a logical expression!
+
+
+We see now that data frames can contain different data types! So for the first time, we added something the human finds interesting as data. However, computation is of course not possible with this. We can store data as character, but of course it makes more sense if we can label numeric stuff. In R, this variable type is called a factor.
+
+### Factors
+Factors are something very special. they are a lot like labels you know from stata or spss. Though they are stored numerically (as integers) they are treated as categorical variables. They also have attributes called labels. This again is close to SPSS. So you add a label attribute to each factor level. 1,2 becomes male, female.
+
+You can do factors from numeric; but you have to provide the additional interpretation of course.
+```{r}
+
+df$Gender<-factor(df$gender_num,labels=c('Male','Female'))
+               
+```
+
+You can also go directly from the Gender in character form with as.factor. You see it takes the expressions we used in the string and uses it as levels. 
+```{r}
+
+df$Gender<-as.factor(df$gender)
+
+```
+
+## Dates
+
+Date variables have very useful attributes. 
+
+```{r}
+
+df$birthdate<-c("2000-01-01","1997-02-15","1995-01-07","2003-11-01")
+
+df$birthdate<-as.Date(df$birthdate)
+
+df[df$birthdate>"2003-01-01",]
+
+```
+
+For more, you can use lubridate!
+

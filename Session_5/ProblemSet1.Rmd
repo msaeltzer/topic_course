@@ -1,0 +1,91 @@
+---
+title: "Task1"
+author: "Marius Saeltzer"
+date: "25 Februar 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is a problem set. We start in course where your group members and me can help you if necessary.
+
+This is an rmd file. It is important that the package "knitr" is always installed. If you think you are done, click "knit" (the little blue wool ball).
+
+If the task is done correctly and all errors are eliminated, the computer turns it into a nice looking html you can compare in your group. If you come up with different results, you can ask me in the subsequent session.
+
+The tasks will always consist of three types of problems
+
+    1. incomplete or errornous code: find the error
+    
+    2. commenting task: explain what the code is doing by commenting the code
+    
+    3. recreation task: write code that comes up with the same result as asked for
+    
+```{r}
+load("solution.Rdata")
+
+```
+
+
+    
+
+Create an element x which is the identity matrix of the form 4x4.
+    
+```{r}  
+
+x<-
+
+
+## Solution Checker
+if(identical(solution[[1]],x)==F){stop()}
+
+```
+
+Check dimensions,class and whether it is numeric. Store all results in a vector v.
+
+```{r}  
+
+v<-
+
+## Solution Checker
+if(identical(solution[[2]],v)==F){stop()}
+
+```
+
+
+Make sure x is numeric
+
+```{r}
+
+z<-c("3",2,T,"T")
+
+if(is.numeric(z)==F){stop()}
+
+```
+
+Correct the following code! Explain the error message as a comment!
+
+```{r}
+
+c(1,0,0,0)==x[,5]
+
+``` 
+
+Correct the following code! Explain the error message as a comment!
+
+```{r}
+
+is.nA(x)
+
+``` 
+
+
+Correct the following code! Explain the error message as a comment!
+
+```{r}
+
+paste("There are about 5",*5,"students in this course.")
+
+``` 
