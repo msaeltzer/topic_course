@@ -1,0 +1,524 @@
+---
+title: "Import"
+author: "Marius Saeltzer"
+date: "24 Februar 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Session III: Importing Data into R
+
+
+Session II: Reading in Data and working with it!
+
+Now we see that R can be used to create and manipulate objects which contain values. In the end, all data operations can be reduced to this. But to do statstics, we will want to read in real data.
+
+## Reading in Data
+
+For today, we will use existing data based on Stier et al. 2018 to get an overview who is on twitter. We will treat R as if it is stata and not go into details of data structures up until week 5.
+
+First, we need to set a working directory.
+
+### Directories
+
+The workind directory is the place on a drive where you store stuff. It allows you to directly call files without their exact location.
+
+Also: Defining a Project in Rstudio
+
+```{r}
+
+#setwd('C:\Users\admin\Documents\Lehre\Lehre FSS 19\Data')
+
+``` 
+You will get an error message.
+
+
+ copy your path: 
+     
+     Windows: go to the place where the file is placed, click on the path in 
+              copy it and replace all \ with / 
+
+    
+
+```{r}
+
+setwd('C:/Users/admin/Documents/Lehre/Lehre FSS 19/Data')
+
+```
+
+
+## File Management
+
+
+```{r}
+
+# go UP in the tree
+setwd("..")
+
+#go down into a subdirectory
+```
+
+R allows to manipulate directories!
+
+```{r}
+
+dir.create("files")
+
+setwd("./files")
+
+```
+
+## RMD Files
+
+Rmd files use the directory where they are placed in as working directories. If you change them in code, they will only change for one chunk!
+
+```{r}
+setwd("./files")
+getwd()
+```
+
+After the chunk, wd is again the root wd!
+```{r}
+getwd()
+```
+
+You can go to the files tab in the help area of RStudio or directly access it by using:
+
+```{r}
+
+list.files()
+```
+
+## R Projects
+
+Another way to store data and set a working directory is to create a project. (the button with PLUS and R next to new script)
+
+You can save all your work in one folder and reactivate. Problem if this is not your own computer!
+
+###  Loading in Data 
+
+We can import all kinds of data, there are two places where to look for: locally and in the internet. 
+
+
+This can be a path on your computer, but also an URL.
+
+
+
+
+
+## The Delim File Formats
+
+#### csv
+
+read.csv is a function. It takes arguments and turns it into something. There are quite many arguments of the read.table, you can tell the computer very precisely what to do  including what the separator is, how quotes are defined, if there is a header line and million ither things. 
+
+
+```{r}
+
+#?read.table()
+
+```
+
+As you can see in the help file, the function has a number of arguments, most importantly FILE which tells the computer what to open. 
+read.csv is a special case of read.table which has a lot decided before, like what kind of file it is supposed to open. The default is the
+Comma-separated values file, the mighty CSV.
+
+It is by far the most common way of storing data. This is what people mostly refer to as "excel-file", which is just a csv that is rendered unreadible for anyone unwilling to pay for it. Let's try it out. 
+
+```{r}
+c1<-read.csv('presidential_national_toplines_2020.csv')
+
+```
+
+
+### R's very Own data 
+
+R like Stata and SPSS has its own form of storing data.
+
+You can save and load any object from R, even if it would not fit into a classical rectangular dataset. Of course, this can't be opened with other programs but can is very efficient in terms of speed and memory usage. Workspaces can contain dataframes or more complex objects like lists, regression models or even plots.
+
+```{r}
+
+load('presidents.rdata')
+
+```
+
+Every read function has a mirroring WRITE or save function
+
+```{r}
+
+save(c1,file='presidents.rdata')
+
+```
+
+RDS files are like workspaces, but are to be assigned. Here we have a frame of all speeches in the recent Bundestag up until December 2019
+
+```{r}
+r1<-readRDS('presidents.rds')
+
+```
+
+You can also save it out.
+```{r}
+
+saveRDS(r1,file='presidents.rds')
+
+```
+
+
+### Foreign Formats
+
+There is a read function for almost any format you can imagine, although in many cases you have to activate an expansion.
+
+
+```{r}
+
+if(!require(readstata13)){install.packages("readstata13")}
+
+
+```
+
+```{r}
+
+
+library(foreign)
+library(readstata13)
+
+
+list.files()
+fr1<-read.dta13("ZA5861_v1-0-0.dta")
+fr2<-read.spss("ZA5861_v1-0-0.sav",to.data.frame = T)
+```
+
+
+## Data.frames
+
+Data.frames are they natural data storage, comparable to the datasets you have in stata or spreadsheats in excel.
+
+
+They are a version of matrix stored in a list, which allows them to store a lot of datatypes.
+
+```{r}
+
+attributes(c1)
+```
+
+They have rownames, columnames and the class data.frame
+
+There are many ways to access data in data.frames
+```{r}
+list.files()
+c2<-read.csv("candidate_summary_2020.csv")
+
+c2$Cand_Name
+c2[,2]
+c2[,1]
+c2[,"Cand_Name"]
+```
+
+What can we do with a data set, once we have it?
+
+
+## Subsetting 
+
+Sometimes, you don't need all the data stored in a file. It might contain irrelevant data that would bias aggregation or simply relates to observations you don't care about. Let's just focus on the major parties of our large polling data set!
+
+One of the great advantages in R is that you can store as many data.frames and objects as you like, without having to reload them
+
+```{r}
+dems<-c2[c2$Cand_Party_Affiliation=="DEM",]
+reps<-c2[c2$Cand_Party_Affiliation=="REP",]
+
+
+```
+
+
+Data can have different types, as you know
+
+```{r}
+lapply(dems,class)
+
+```
+
+## Factors
+
+One of the strangest concepts in R are factors. Factors, like characters describe categorical variables. The computer won't order them. However, factors work like labels in SPSS or STATA and allow to add information to specific categorical variables, while keeping them numeric in the background.
+
+The easiest way to do this is using a character
+
+```{r}
+
+c2$Party<-as.factor(c2$Cand_Party_Affiliation)
+c2$Party
+```
+
+
+```{r}
+c2$Incumbent<-factor(c2$Cand_Incumbent_Challenger_Open_Seat,labels=c("C","I","O"))
+```
+
+We seem to get an error
+```{r}
+
+table(c2$Cand_Incumbent_Challenger_Open_Seat)
+
+c2$Incumbent<-factor(c2$Cand_Incumbent_Challenger_Open_Seat,labels=c("","C","I","O"))
+                
+```
+
+good to find errors!
+
+
+Obviously, this is wrong. It should be missing data!
+
+```{r}
+
+any(is.na(c2$Incumbent))
+any(c2$Incumbent=="")
+```
+
+Now, we can recode the variable using ifelse. Ifelse uses its argument like this
+
+ifelse(LOGICALCONDITON,FULLFILLED,ELSE)
+
+again, it all comes down to logic!
+
+```{r}
+
+c2$Incumbent<-ifelse(c2$Cand_Incumbent_Challenger_Open_Seat=="",NA,c2$Cand_Incumbent_Challenger_Open_Seat)
+
+c2$Incumbent<-factor(c2$Incumbent,labels=c("C","I","O"))
+
+```
+
+
+
+## Dates
+You learned to know characters, numerics and logicals. Now let's look at dates.
+Date variables have very useful attributes. 
+
+```{r}
+
+class(c1$modeldate)
+c1$modeldate<-as.Date(c1$modeldate,format="%m/%d/%Y")
+
+
+```
+
+Just, as a brief exmaple: How do we deal with German Dates?
+
+```{r}
+
+ger_birthdate<-c("01.01.2010","15.02.2015","01.07.1995","01.11.2003")
+
+#df$ger_birthdate<-as.Date(df$ger_birthdate)
+
+ger_birthdate<-as.Date(ger_birthdate,format = "%d.%m.%Y") # day, month, year 
+
+ger_birthdate
+
+```
+
+
+
+
+# Visualizing Data in R 
+
+
+```{r}
+
+plot(c1$modeldate,c1$national_voteshare_inc)
+
+```
+
+```{r}
+
+plot(c1$modeldate,c1$national_voteshare_inc,type="lines",ylab="Voteshare",xlab="Time")
+
+```
+Extend the margins abit
+```{r}
+
+plot(c1$modeldate,c1$national_voteshare_inc,type="lines",ylim=c(44,55),ylab="Voteshare",xlab="Time")
+
+```
+
+```{r}
+
+plot(c1$modeldate,c1$national_voteshare_inc,type="lines",ylim=c(44,55),col="red",ylab="Voteshare",xlab="Time")
+lines(c1$modeldate,c1$national_voteshare_chal,col="blue")
+
+
+```
+
+Barplot
+
+```{r}
+barplot(table(c2$Incumbent),col=c("red","blue","yellow"))
+
+```
+Histogram to get distributions
+```{r}
+hist(c1$popwin_inc)
+
+```
+
+
+Boxplot
+```{r}
+
+plot(log(c2$Total_Receipt)~c2$Incumbent)
+
+```
+
+
+## First data Analysis
+
+
+```{r}
+
+mod<-lm(c2$Total_Receipt~(c2$Party=="DEM")+c2$Incumbent)
+
+
+```
+
+```{r}
+
+summary(mod)
+
+```
+
+
+
+
+
+
+
+
+
+
+# Organizing Data in R
+
+Data storage's most important feature is unit of analysis. Unit of analysis describes the meaning of a line or row in a data set. Unit of analysis could be the individual (in a cross sectional design), but also groups of individuals (party) or multiple observations per individual (such as panel data). 
+
+Transforming data from a more complex file format such as xml to a rectungular form always requires decisions on the level of analysis. Are we interested in individual MPs, MPs in each election period or party aggregates. And if so, how do we store it? This part of the script will deal with these questions. 
+
+This data set is so called panel data with individual*time as the unit of analysis. For each candidate, we have predictions over time. 
+
+```{r}
+frc<-read.csv("house_district_forecast.csv")
+```
+
+The simplest transformation in R is aggregation or summarization. It moves up the unit of analysis by loosing data. We can therefore take the mean of a time-varying variable.
+In practice, is done using the formula notation: it is special way to write variable relationships in r and is used for regressions, also.
+
+
+```{r}
+                      # this is a tilde!      
+vs<-aggregate(voteshare~candidate,frc,FUN="mean")
+
+```  
+
+We see that the new data set has observations which mirror the number of unique expressions of candidate. It is basically a "summary" data set. We also see that the other variables are gone. This can be solved by adding other variables WHICH VARY ON THE SAME LEVEL OF ANALYSIS.
+
+```{r}
+                      # this is a tilde!      
+vs<-aggregate(voteshare~candidate+party,frc,FUN="mean")
+
+```  
+
+If you take another variable, which changes inside the individual over time, the computer will create an observation for each combination.
+
+The model variable has three levels: classic, lite and deluxe. They produce different results. When we aggregate based on candidate and model, we get the average result per model per candidate.
+
+```{r}
+                      # this is a tilde!      
+vs<-aggregate(voteshare~candidate+model,frc,FUN="mean")
+
+```  
+
+As you can see, we change the level of analysis to "larger" and loose data: all variation in predictions is flattened into a single figure. 
+
+We could also change the level of analysis by changing where the data is stored instead of removing it. The panel format we have in the fcr data set is called a LONG data format in which each time*individual observation is a row. But you can also store the different timepoints as variables and keeping rows for individuals. This is called a WIDE format.
+
+So if you run a simple regression on a long data format, you will run into problems with hierachical data. You can account for this by reshaping the dataset, turning differences in observations in different variables.
+ 
+
+```{r}
+library(reshape2)
+
+d1<-reshape2::dcast(frc, candidate ~ model,fun=mean, value.var="voteshare",)
+
+
+```
+
+
+Or a little bit more useful case: let's take the polls as variables into a single data set.
+```{r}
+library(lubridate)
+
+# first we round the date to make it
+frc$week<-round_date(frc$forecastdate,"week")
+
+d2<-reshape2::dcast(frc, candidate ~ week,fun=mean, value.var="voteshare",)
+
+```
+
+Now we can "melt" the data down into long form again.  
+```{r}
+d4<-reshape2::melt(d2)
+
+```
+## Combinining Data
+
+
+If we have achieved data on a compable level, we can combine data sets from different sources. It is just important that we have a connector variable on the individual level. 
+
+The process of combining two data sets is called merging or joining data. 
+
+This example data set contains the twitter accounts of a number of candidates in the 2018 midterm elections. 
+
+```{r}
+
+c1<-read.csv("congress1.csv")
+
+names(c1)
+
+```
+
+As we can see it contains a number of variables we also find in the main data set. The reason may be that this data set is actually based on 538's candidate list. 
+
+Let's now combine the data set to check whether electoral success corresponds to Twitter followers. To do so, we need to give merge three arguments: 2 dataframes to merge and at least one variable to merge BY.
+
+```{r}
+
+c2<-merge(c1,frc,by="candidate")
+
+```
+
+As you can see, we now have one data set c2, which has 99k observations. There are only half as many unique candidates in c1 than in frc, so this makes sense. The data set keeps all data points from fcr which it can MATCH.
+
+
+If we specify all.x or all.y , all values are kept, but with NA's for all new variables in all lines that are not matched.
+
+```{r}
+
+c2<-merge(c1,frc,by="candidate",all.y=T)
+
+```
+
+If the variables by which to match do not have the same name, you can either change the name or specify
+
+```{r}
+
+c2<-merge(c1,frc,by.y="candidate",by.x="name",all.y=T)
+
+```
+
+It is very important to make sure the unqiue values are homogeneous and of the same type. Little differences in spelling will lead to a mismatch. The best way is to use not name, but unique id, suchn as a number stored in a string.
+
+The beauty of R is that you can step by step merge as many data sets as you like, aggregate them and reshape them according to your needs. 
