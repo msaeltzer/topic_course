@@ -394,13 +394,6 @@ summary(mod)
 
 
 
-
-
-
-
-
-
-
 # Organizing Data in R
 
 Data storage's most important feature is unit of analysis. Unit of analysis describes the meaning of a line or row in a data set. Unit of analysis could be the individual (in a cross sectional design), but also groups of individuals (party) or multiple observations per individual (such as panel data). 
