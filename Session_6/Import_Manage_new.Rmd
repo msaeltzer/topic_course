@@ -31,7 +31,7 @@ Also: Defining a Project in Rstudio
 
 ```{r}
 
-#setwd('C:\Users\admin\Documents\Lehre\Lehre FSS 19\Data')
+setwd('C:\Users\admin\Documents\Lehre\Lehre FSS 19\Data')
 
 ``` 
 You will get an error message.

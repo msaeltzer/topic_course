@@ -38,9 +38,6 @@ Create an element x which is the identity matrix of the form 4x4.
 x<-
 
 
-## Solution Checker
-if(identical(solution[[1]],x)==F){stop()}
-
 ```
 
 Check dimensions,class and whether it is numeric. Store all results in a vector v.
@@ -48,9 +45,6 @@ Check dimensions,class and whether it is numeric. Store all results in a vector 
 ```{r}  
 
 v<-
-
-## Solution Checker
-if(identical(solution[[2]],v)==F){stop()}
 
 ```
 
@@ -61,7 +55,6 @@ Make sure x is numeric
 
 z<-c("3",2,T,"T")
 
-if(is.numeric(z)==F){stop()}
 
 ```
 
