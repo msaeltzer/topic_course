@@ -9,11 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This is a problem set. We start in course where your group members and me can help you if necessary.
+This is a problem set. 
 
-This is an rmd file. It is important that the package "knitr" is always installed. If you think you are done, click "knit" (the little blue wool ball).
-
-If the task is done correctly and all errors are eliminated, the computer turns it into a nice looking html you can compare in your group. If you come up with different results, you can ask me in the subsequent session.
 
 The tasks will always consist of three types of problems
 
@@ -23,11 +20,6 @@ The tasks will always consist of three types of problems
     
     3. recreation task: write code that comes up with the same result as asked for
     
-```{r}
-load("solution.Rdata")
-
-```
-
 
     
 
