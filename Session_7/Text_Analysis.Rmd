@@ -117,7 +117,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 
 ```{r}
-install.packages('quanteda')
+#install.packages('quanteda')
 
 
 ```
