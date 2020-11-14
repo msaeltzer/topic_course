@@ -1,0 +1,352 @@
+---
+title: "Supervised Classification"
+author: "Marius Sältzer"
+date: "14 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Supervised Classification
+
+After we learned how to prepare data for text analysis and applied a very simple dictionary, today we will learn how to automatically classify text using prelabeled data. This is an important distinction. 
+
+
+We use human coded LABELS to TRAIN a MODEL.
+
+## Training a model 
+
+A text model is a "simplification" of text. It allows computer to find the most important features in human language for a specified task. In other words, he wants to find the important FEATURES (in this case words) that allow him to solve this task. 
+
+This task is to categorize text. A model makes predictions for each text in what category it falls. If you have 2 categories, it will try to classify each text into those 2 categories. To teach the computer how to do this, we need to TRAIN it. Training means that we feed data into a model that then starts to evaluate features. It tries to find WEIGHTS for the features. 
+
+We give the computer categories for existing text: we call them LABELS. These labels are exogenous and have to be hand coded. This is what makes a test model 
+SUPERVISED.
+
+
+### Out-of-Sample
+
+In a simple text model, these weight are numbers that associate a feature with categories. After the computer learned which features are associated with which category, it now has learned what makes a text belong to a category. We can now apply these weights to new texts, to PREDICT their category. This is called OUT-OF-SAMPLE-PREDICTION.
+
+Typically, before we apply a model to new text, we test it. We typically split our coded data into training data and test data. Then we see how well our model predicts the classes in the test data (for which we also know the labels). If the model is accurate, we can use it for out-of-sample prediction. However, this is tricky. Since the computer only learns to evaluate words and categories from the training sample, it does not know words which are only in the new data. 
+
+```{r}
+#install.packages("caret")
+```
+
+
+## The Comparative Agendas Project 
+
+The Comparative Agenda Project tries to find out what is on the policy agenda in different countries. To do so, it developed a comparative coding scheme to contain all important issues in politics. 
+
+
+```{r}
+library(quanteda)
+
+load("CAP_UK.rdata")
+
+texts(uk_corp)[1:10]
+```
+
+```{r}
+check<-cbind(docvars(uk_corp)[10:100,],texts(uk_corp)[10:100])
+check
+```
+
+As we can see, individual text chunks are individual lines. Each of these lines is coded according to a coding scheme, into topic and subtopic.
+
+### Let's look at the Scheme
+You can find the master codebook at:
+
+https://www.comparativeagendas.net/pages/master-codebook
+
+
+```{r}
+
+df<-docvars(uk_corp)
+
+table(df$topic)
+
+```
+
+Mh...annoying. Good time to learn how to "merge" data. Merging is a process that combines two data sets on a common variable. A more prominent term is JOIN (in SQL or Python)
+
+Let's get the codebook:
+```{r}
+load("codebook.Rdata")
+
+```
+
+As you see, it contains a numeric code and the category name. Our dataset contains only the numeric code but also the texts. 
+
+To do this, we first have to create a common variable.
+```{r}
+
+cb$code<-as.numeric(cb$code)
+
+
+df$names<-docnames(uk_corp)
+
+df$docnum<-as.numeric(gsub("text","",df$names))
+
+
+df1<-merge(df,cb,by.x="topic",by.y="code")
+
+```
+
+Let's see if this worked!
+
+
+```{r}
+nrow(df1)
+nrow(df)
+
+```
+We lost a lot ob observations. Why? Because a lot is coded with 0, no category and 1 is coded as 100 for some reason. We fix this and try again.
+```{r}
+
+nocat<-c(0,"No category")
+cb$code[1]<-1
+cb<-rbind(cb,nocat)
+
+
+
+df1<-merge(df,cb,by.x="topic",by.y="code")
+
+df1<-df1[order(df1$docnum,decreasing = F),]
+```
+
+After this worked, we simply replace the docvars of the corpus with our new ones.
+
+```{r}
+docvars(uk_corp)<-df1
+
+check<-cbind(docvars(uk_corp)[10:100,],texts(uk_corp)[10:100],docnames(uk_corp)[10:100])
+check
+
+
+
+```
+
+### Preparing the Text Data
+
+We now go through the same preprocessing steps we learned in the previous session!
+
+```{r}
+ft<-tokens(uk_corp,remove_punct=T,remove_numbers = T)
+ft<-tokens_tolower(ft)
+ft<-tokens_select(ft,pattern=stopwords("en"),selection='remove')
+
+dfc<-dfm(ft)
+```
+
+## Naive Bayes
+
+Let's try out our first machine learning algorithm. We use the Naive Bayes classifier, the simplest of them.  
+
+A nice introduction is to be found here: 
+https://tutorials.quanteda.io/machine-learning/nb/
+
+
+Naive Bayes is called naive bayes because it applies Bayes rule of prior density*new data = posterior density in a pretty naive way. 
+
+```{r}
+#install.packages("quanteda.textmodels")
+
+library(quanteda.textmodels)
+
+```
+
+
+
+### Create training data
+
+
+First, we split our data in a training set and a valdidation set. Based on the training set, it will learn the right words and then test whether it can predict the classes in the test set. By doing so, we can test how our model deals with new data and also does not "overfit".
+
+
+
+```{r}
+
+id_train <- sample(1:nrow(df), 10000, replace = FALSE)
+head(id_train, 10)
+
+docvars(ft,"id_numeric") <- 1:ndoc(ft)
+issue<-"International Affairs"
+table(docvars(ft,"cat"))
+
+docvars(ft,"issue") <-as.factor( ifelse(docvars(ft,"cat")==issue,"Yes","Other"))
+
+table(docvars(ft,"issue"))
+
+# get training set
+dfmat_training <- dfm(tokens_subset(ft, id_numeric %in% id_train))
+
+# get test set 
+dfmat_test <- dfm(tokens_subset(ft, !id_numeric %in% id_train))
+
+```
+
+### Train the model 
+
+Fitting the naive bayes model is easy: we tell the computer on which dfm it should learn, based on which label variable
+
+
+```{r}
+library(quanteda.textmodels)
+
+tmod_nb <- textmodel_nb(dfmat_training, dfmat_training$cat)
+
+summary(tmod_nb)
+
+```
+
+Basically, the model learns which words come up more often in a specific category. Based on these words, it learns how a specific word is more likely to occur in a specific category.  
+
+```{r}
+scores<-as.data.frame(t(tmod_nb$param))
+scores
+
+```
+
+Now, which words are indicative of a specific issue, such as environment.
+
+```{r}
+
+scores<-scores[order(scores$Environment,decreasing = T),]
+
+rownames(scores)[1:20]
+
+```
+
+
+## Predicting 
+
+Well this already looks good...now let's use this model to predict the categories of the REST of the data we didn't use, and check how this relates to the real categories. 
+
+To do so, we need to use only those features which are learned from the training data and get weights -> all other terms are not the same and therefore can't be evaluated.
+
+```{r}
+dfmat_matched <- dfm_match(dfmat_test, features = featnames(dfmat_training))
+
+actual_class <- dfmat_matched$cat
+
+
+```
+
+We use the predict function to apply this model to the other dfm.
+
+```{r}
+predicted_class <- predict(tmod_nb, newdata = dfmat_matched)
+```
+
+
+Now, we basically create a table that compares predictions with reality. We use the caret package
+
+```{r}
+
+tab_class <- table(actual_class, predicted_class)
+tab_class
+
+```
+
+
+Now, how do we quantify this?  Basically, we have 2 kinds of errors. We can be confused in two ways. We can underidentify a topic or overidentify it. 
+
+
+### Specifity
+
+
+
+### Sensitivity 
+
+
+
+### Precision
+
+
+
+### Recall 
+
+
+
+### Accuracy
+
+
+
+
+```{r}
+library(caret)
+confusionMatrix(tab_class, mode = "everything")
+```
+
+
+
+
+## Advanced Machine Learning 
+
+
+
+### Support Vector Machines
+ 
+```{r}
+
+
+```
+
+
+```{r}
+library(glmnet)
+
+
+lasso <- cv.glmnet(x = dfmat_training,
+                   y = as.integer(dfmat_training$cat == "Environment"),
+                   alpha = 1,
+                   nfold = 5,
+                   family = "binomial")
+
+```
+
+
+```{r}
+index_best <- which(lasso$lambda == lasso$lambda.min)
+beta <- lasso$glmnet.fit$beta[, index_best]
+head(sort(beta, decreasing = TRUE), 20)
+
+```
+
+
+
+```{r}
+
+dfmat_matched <- dfm_match(dfmat_test, features = featnames(dfmat_training))
+
+pred <- predict(lasso, dfmat_matched, type = "response", s = lasso$lambda.min)
+head(pred)
+
+```
+
+
+```{r}
+
+table(dfmat_matched$cat == "Environment")
+
+actual_class <- as.integer(dfmat_matched$cat == "Environment")
+
+predicted_class <- predict(lasso, dfmat_matched, type = "class")
+
+table(predicted_class)
+
+
+tab_class <- table(actual_class, predicted_class)
+tab_class
+```
+
+
+```{r}
+confusionMatrix(tab_class, mode = "everything")
+
+```

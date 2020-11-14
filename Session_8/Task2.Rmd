@@ -1,0 +1,115 @@
+---
+title: "Task2"
+author: "Marius Saeltzer"
+date: "11-13-2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is a problem set. 
+
+
+The tasks will always consist of three types of problems
+
+    1. incomplete or errornous code: find the error
+    
+    2. commenting task: explain what the code is doing by commenting the code
+    
+    3. recreation task: write code that comes up with the same result as asked for
+    
+
+
+# Task 1 (10 Points)
+
+The package "politicaldata" contains all kinds of nice metainformation for American elections. Install it and activate it! (5 Points)
+
+
+```{r}
+
+```
+    
+In the US ideological positions of members of the House of Rpresentatives are measured using the "NOMINATE" score. Nominate scores are based on the voting behavior in congress. How exactly this is computed is not relevant to this task. It is however important that the "first dimension" is usually interpreted as a left right dimension.
+
+This package contains a function that calls this data. Find it using the package tab or google it. Get the data from the 116th Congress (which is the most recent available one) (5 Points)
+
+```{r}  
+
+```
+
+
+# Task 2: Inspect your data (15 Points)
+
+Print out 
+    a) number of observations (3 Points)
+    b) variable names (3 Points)
+    c) a table of how many representatives there are in each State (4 Points)
+
+```{r}  
+
+```
+
+Who is the most conservative member? 
+Who is the most liberal? (5 Points)
+
+
+```{r}  
+
+h1$bioname[h1$nominate_dim1==max(h1$nominate_dim1)]
+
+h1$bioname[h1$nominate_dim1==min(h1$nominate_dim1)]
+
+```
+
+
+# Task 3: Cleaning (10 Points)
+
+The party code variable contains the information of which party the politician belongs to. Create a factor called party inside the data.frame with the right labels!
+
+Hint: 
+100 stands for Democrats
+200 for Republicans
+328 for independent
+
+```{r}  
+
+```
+
+# Task 4: Visualize (20)
+
+
+Create a plot of the first two dimensions (nominate_dim). (10 Points)
+
+Color them according to their party, red for republicans, blue for democrats. (7 Points)
+
+Label the Axes accordingly (3 Points)
+
+
+Hint: You need to create a vector for a color for each observation: Try it out!
+    
+
+
+```{r}
+
+``` 
+
+
+# Task 5 (20 Points)
+
+a) Use a regression: How much variation of the first dimension is explained by the party? (5 Points)
+
+
+
+```{r}
+
+```
+
+b) Find a function (15 Points)
+
+Find out how to do a logistic regression in R. Turn the effect around, how well does position on the first dimension predict party membership? Create a variable which is either Republican or Non-Republican and run the regression!
+
+```{r}
+
+``` 
