@@ -35,6 +35,16 @@ Typically, before we apply a model to new text, we test it. We typically split o
 
 ```{r}
 #install.packages("caret")
+#install.packages("quanteda.textmodels")
+#install.packages("glmnet")
+#install.packages("quanteda")
+
+
+library(quanteda)
+library(glmnet)
+library(caret)
+library(quanteda.textmodels)
+
 ```
 
 
@@ -44,7 +54,6 @@ The Comparative Agenda Project tries to find out what is on the policy agenda in
 
 
 ```{r}
-library(quanteda)
 
 load("CAP_UK.rdata")
 
@@ -153,15 +162,6 @@ https://tutorials.quanteda.io/machine-learning/nb/
 
 Naive Bayes is called naive bayes because it applies Bayes rule of prior density*new data = posterior density in a pretty naive way. 
 
-```{r}
-#install.packages("quanteda.textmodels")
-
-library(quanteda.textmodels)
-
-```
-
-
-
 ### Create training data
 
 
@@ -175,12 +175,6 @@ id_train <- sample(1:nrow(df), 10000, replace = FALSE)
 head(id_train, 10)
 
 docvars(ft,"id_numeric") <- 1:ndoc(ft)
-issue<-"International Affairs"
-table(docvars(ft,"cat"))
-
-docvars(ft,"issue") <-as.factor( ifelse(docvars(ft,"cat")==issue,"Yes","Other"))
-
-table(docvars(ft,"issue"))
 
 # get training set
 dfmat_training <- dfm(tokens_subset(ft, id_numeric %in% id_train))
@@ -263,20 +257,7 @@ Now, how do we quantify this?  Basically, we have 2 kinds of errors. We can be c
 
 ### Sensitivity 
 
-
-
-### Precision
-
-
-
-### Recall 
-
-
-
 ### Accuracy
-
-
-
 
 ```{r}
 library(caret)
@@ -286,20 +267,14 @@ confusionMatrix(tab_class, mode = "everything")
 
 
 
-## Advanced Machine Learning 
+## Reguarized Regressions
+
+Another way to classify text which might be a bit more intuitive to classically trained social scientists is the use of logistic regression methods.
 
 
-
-### Support Vector Machines
- 
-```{r}
-
-
-```
-
+To do so, we need to "binarize" the category: 
 
 ```{r}
-library(glmnet)
 
 
 lasso <- cv.glmnet(x = dfmat_training,
@@ -311,6 +286,7 @@ lasso <- cv.glmnet(x = dfmat_training,
 ```
 
 
+Like above, we can extract the relevant terms. 
 ```{r}
 index_best <- which(lasso$lambda == lasso$lambda.min)
 beta <- lasso$glmnet.fit$beta[, index_best]
@@ -319,7 +295,7 @@ head(sort(beta, decreasing = TRUE), 20)
 ```
 
 
-
+And follow the same process as above
 ```{r}
 
 dfmat_matched <- dfm_match(dfmat_test, features = featnames(dfmat_training))
@@ -329,6 +305,8 @@ head(pred)
 
 ```
 
+
+And look at the confusion matrix:
 
 ```{r}
 
@@ -340,13 +318,15 @@ predicted_class <- predict(lasso, dfmat_matched, type = "class")
 
 table(predicted_class)
 
-
 tab_class <- table(actual_class, predicted_class)
-tab_class
-```
 
-
-```{r}
 confusionMatrix(tab_class, mode = "everything")
-
 ```
+
+Here we can see a typical problem of the accuracy score. It is very high because there are very categories. Again, since the category is comparatively rare, just guessing NO in 90 percent of the time is a very good way to get an accuracy >.9. However, this is not telling uns anything about how good the model is to predict. To have a baseline what to expect, we have the "no-information-rate". Basically it says: if you would guess based on the empirical distrubution in the training data, how well would the model do. 
+
+To be truly honest -> guessing would have been better here ;)
+
+The naive bayes model however is a lot more powerful and performs actually very well when compared to the gigantic number of categories. So what you should learn: always think about what your model actually does in comparison to what the numbers say. 
+
+So what does this tell us about coding schemes? It might not just be the words, but implicit knowledge of coders. 
