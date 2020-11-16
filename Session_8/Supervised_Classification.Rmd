@@ -55,7 +55,7 @@ The Comparative Agenda Project tries to find out what is on the policy agenda in
 
 ```{r}
 
-load("CAP_UK.rdata")
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_8/CAP_UK.rdata"))
 
 texts(uk_corp)[1:10]
 ```
@@ -85,7 +85,7 @@ Mh...annoying. Good time to learn how to "merge" data. Merging is a process that
 
 Let's get the codebook:
 ```{r}
-load("codebook.Rdata")
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_8/codebook.rdata"))
 
 ```
 
@@ -182,6 +182,7 @@ dfmat_training <- dfm(tokens_subset(ft, id_numeric %in% id_train))
 # get test set 
 dfmat_test <- dfm(tokens_subset(ft, !id_numeric %in% id_train))
 
+
 ```
 
 ### Train the model 
@@ -251,13 +252,42 @@ tab_class
 Now, how do we quantify this?  Basically, we have 2 kinds of errors. We can be confused in two ways. We can underidentify a topic or overidentify it. 
 
 
-### Specifity
 
 
+P: Positives
+N: Negatives
+TP: True Positives
+TN: True Negatives
 
 ### Sensitivity 
 
+
+TP/P
+
+sensitivity, recall, hit rate, or true positive rate (TPR)
+
+How good is the classifier in correctly identifying true values?
+
+Does the model forget documents which belong in a category?
+
+### Specifity
+
+TN/N
+
+specificity, selectivity or true negative rate (TNR)
+
+How good is the classifier in correctly identifying false values?
+
+Does it put documents into a category that do not belong there?
+
+
 ### Accuracy
+
+A good overall score, like Krippendorff's Alpha
+
+TP+TN/P+N
+
+
 
 ```{r}
 library(caret)
