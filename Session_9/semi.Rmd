@@ -31,8 +31,8 @@ In the remaining 3 weeks of this course, we will deal with semisupervised and un
 One important advantage of rdata objects is the fact that they can store anything. Model objects are simply lists we can import again.
 
 ```{r}
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_9/nb_model_manifesto.rdata"))
 
-load("nb_model_manifesto.Rdata")
 
 ```
 
@@ -54,8 +54,8 @@ Rauh and Schwalbach composed a gigantic data set of parliamentary speech in 6 co
 
 
 ```{r}
-load("speeches.rdata")
 
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_9/speeches.rdata"))
 ```
 
 Conventiently, the data contains a variable called "agenda item" which very briefly shows us what the speeches are about in a very broad manner. 
@@ -94,8 +94,8 @@ Next, we use topic overlap. To do so, we get the dfm we trained our data on last
 We create a feature overlap dfm, just as we did between training and test data. The only difference: now we have vastly different types of text. 
 
 ```{r}
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_9/training_dfm.rdata"))
 
-load("training_dfm.rdata")
 dfmat_matched <- dfm_match(dfmat_test, features = featnames(dfc))
 
 predicted_class <- predict(tmod_nb, newdata = dfmat_matched)
@@ -241,15 +241,18 @@ for(which){do what}
 
 
 ```{r}
-for(i in 1:10){print i}
+for(i in 1:10){print(i)}
+
+
+
 # it does not matter how you call the iterator 
-for(x in 1:10){print x}
+for(x in 1:10){print(x)}
 
 x<-10
 
-for(i in 1:x){print i}
+for(i in 1:x){print(i)}
 ## you can also put functions in there
-for(i in 1:x){print (i*34)}
+for(i in 1:x){print(i*34)}
 
 
 ```
@@ -294,10 +297,11 @@ summary(keyATM_docs)
 ```
 
 
-This will take a while!
+This will take a while! You can run the following code at home if you like, but you can also just download the model results in the next chunk!
 
 
-```{r}
+```{r eval=FALSE, echo=TRUE}
+
 out <- keyATM(docs              = keyATM_docs,    # text input
               no_keyword_topics = 5,              # number of topics without keywords
               keywords          = keywords,       # keywords
@@ -308,17 +312,14 @@ out <- keyATM(docs              = keyATM_docs,    # text input
 
 ```
 
-
-
-
 We now run a semisupervised topic model. We tell the computer we have 22 topics (our topics) and give it the leeway to find 5 more, because we assume there is other stuff in the data that was not in the manifesto. The computer now starts iterating over the data, reshuffling and recomputing hundreds of times to find the optimal allocation of documents. This is basically a cluster analysis and I will show the intuition next week in more detail.
 
 
-Let's take a look!
+Let's take a look at the model results!
 
 ```{r}
 
-save(out,file="topicmodel.rdata")
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_9/topicmodel.rdata"))
 
 top_words(out)
 
