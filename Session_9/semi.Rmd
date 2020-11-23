@@ -182,6 +182,7 @@ tmod_nb2 <- textmodel_nb(dfmat_test, dfmat_test$labels)
 
 ```{r}
 scores2<-as.data.frame(t(tmod_nb2$param))
+scores<-scores[order(scores$Environment,decreasing = T),]
 
 scores2<-scores2[order(scores2$Environment,decreasing = T),]
 
@@ -321,6 +322,16 @@ Let's take a look at the model results!
 
 load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_9/topicmodel.rdata"))
 
-top_words(out)
+tw<-top_words(out,60)
+tw
+```
+
+Now let's compare how the 700 iterations improved the model.
+```{r}
+envi<-tw$`8_Environment`
+
+env2<-cbind.data.frame(env,envi)
+names(env2)<-c("manifesto","nb_enriched","seeded_lda")
+env2
 
 ```
