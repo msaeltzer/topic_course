@@ -1,0 +1,325 @@
+---
+title: "Semisupervised Models"
+author: "Marius Sältzer"
+date: "22 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+#install.packages("vegan")
+#install.packages("keyATM")
+
+```
+
+In the previous 2 weeks we learned about dictionaries and supervised methods to classify text. But as you know, this depends heavily on outside knowledge. It allows us to classify text that is very similar to the training data. 
+
+As you all know, this is a strong assumption in times in which there is so much new information produced every day. Newspaper articles, social media posts, parliamentary speeches: All ask for classification but how can be do this if there is no training data? 
+
+How can we apply classification techniques to texts where we know little or nothing about?
+
+
+In the remaining 3 weeks of this course, we will deal with semisupervised and unsupervised classification. Of all techniques they are the least reliable, but also the cheapest in terms of labor invested. For them, it is even more important to thoroughly validate them, because we can't just check, as in supervised learning, if predictions match real data. Instead, we need to rely on categories "making sense". In this session, we apply semisupervised learning, meaning we use the results of a supervised classifier on coded text on new, uncoded text and adapting it to the new corpus. We do this using a "seeded" topic model.
+
+# Transferring a Supervised Model to new text
+
+
+One important advantage of rdata objects is the fact that they can store anything. Model objects are simply lists we can import again.
+
+```{r}
+
+load("nb_model_manifesto.Rdata")
+
+```
+
+Let's look back, briefly: 
+```{r}
+scores<-as.data.frame(t(tmod_nb$param))
+
+scores<-scores[order(scores$Environment,decreasing = T),]
+
+rownames(scores)[1:20]
+
+```
+
+
+# Parliamentary Speech
+
+
+Rauh and Schwalbach composed a gigantic data set of parliamentary speech in 6 countries over vast timeframes. Here, you find all speeches since January 2019.
+
+
+```{r}
+load("speeches.rdata")
+
+```
+
+Conventiently, the data contains a variable called "agenda item" which very briefly shows us what the speeches are about in a very broad manner. 
+
+We have 1824 unique Agenda items.
+
+This allows us some sort of "validation" -> do our predicted classes match the agenda?
+```{r}
+
+length(unique(house$agenda))
+
+
+```
+Next, we go through our typical process:1
+Corpus, tokens, dfm...
+
+We need to put the data in the same shape as the model was trained on.
+
+```{r}
+
+hcorp<-corpus(house$text,docvars=house)
+
+htok<-tokens(hcorp,remove_numbers = T,remove_symbols = T,remove_punct = T)
+htok<-tokens_tolower(htok)
+htok<-tokens_select(htok,stopwords("en"),selection="remove")
+htok[1:10]
+dfmat_test<-dfm(htok)
+
+
+```
+
+# Overlapping Features
+
+Next, we use topic overlap. To do so, we get the dfm we trained our data on last week -> the only difference being is that I had it learn on the whole dataset, not just the training data. Therefore we maximize the features that we get scores on. 
+
+We create a feature overlap dfm, just as we did between training and test data. The only difference: now we have vastly different types of text. 
+
+```{r}
+
+load("training_dfm.rdata")
+dfmat_matched <- dfm_match(dfmat_test, features = featnames(dfc))
+
+predicted_class <- predict(tmod_nb, newdata = dfmat_matched)
+
+```
+
+Let's see how many features exist in both
+
+
+```{r}
+
+
+nfeat(dfmat_matched)
+nfeat(dfmat_test)
+nfeat(dfc)
+
+```
+
+We see that all words the model learned from the manifestos are also in the speech corpus, but only about 15 percent of the words in the speeches corpus are in the manifestos, so have scores.
+
+
+
+# Eyeball Validation 
+
+
+```{r}
+house$predicted_class<-predicted_class
+
+social<-house[house$predicted_class=="Social Welfare",]
+
+
+
+```
+
+
+# Topic Mixes
+ 
+The categories we trained the model on were based on very short text fragments.
+Speeches on the other hand can be quite long and contain more than one topic. As I mentioned last week, the model actually computes scores for each document for each category -> we can therefore see the topic "mixture".
+
+ Instead of the most likely class, we now have data for all the classes. 
+
+
+```{r}
+
+
+predicted_class2 <- predict(tmod_nb, newdata = dfmat_matched,type = "prob" )
+
+
+```
+
+
+A nice way to inspect multidimensional data for overlap are "dimension reduction" procedures like factor analysis (PCA), or in this case: correspondence analysis. You don't need to understand how this works in detail, but it tries to find underlying dimensions of differences. Speeches who are close to one another should be close in this latent space. 
+
+A great feature why correspondence analysis is particularly useful is that it mapps the categories in the same space. Therefore we can check whether categories we would intuitively group as similar, actually are similar in terms of what speeches we classed in there. 
+
+```{r}
+
+
+v1<-vegan::cca(predicted_class2)
+pos<-as.data.frame(v1$CA$v)
+
+```
+
+Let's take a look at the data -> read this like a factor analysis (and ignore culture with only 2 documents)
+
+```{r}
+head(pos[order(pos$CA1),],22)
+
+
+
+```
+
+What is this dimension? Discuss? Where would you expect "no category"?
+
+
+## Extending the wordlist!
+
+```{r}
+docvars(dfmat_test,"labels")<-predicted_class
+tmod_nb2 <- textmodel_nb(dfmat_test, dfmat_test$labels)
+```
+
+
+```{r}
+scores2<-as.data.frame(t(tmod_nb2$param))
+
+scores2<-scores2[order(scores2$Environment,decreasing = T),]
+
+env<-cbind(rownames(scores)[1:60],
+rownames(scores2)[1:60])
+
+env
+```
+
+Discuss: How did the data change? What makes the difference between manifesto language and parliamentary speech?
+
+
+
+So what we did here is basically utilize the data we got from the previous model and then grow its vocabulary. Instead of 15,000 terms with values, we now have >106,000 terns with weights. 
+```{r}
+
+dim(scores2)
+
+
+``` 
+
+
+What we did here is to move from supervised to semi-supervised models. We (very informally) computed new word connections, based on the connections of words we know from manifestos. Now imagine, we could do this over and over, shuffle around categories. 
+
+## Semisupervised Models 
+
+
+While a supervised classifier only evaluates terms it knows, a semisupervised model tries to classify text and learn new terms along as they come up in documents. 
+
+At it's core it is a topic model, something we will be talking about in detail next week. The idea of topic models is as follows: give the computer a fixes number of categories and let it cluster words until that occur together in documents until it has found the clusters that are most distinctive from one another. 
+
+A semisupervised topic model, as we will use it here, does not start from random, but from a prior distribution of words that we know are connected to the topic. In this case, we draw this information from the supervised classifier we developed before. 
+
+
+
+# Preparing a "Dictionary"
+
+
+First, we create a list of keywords - To do so, we use a so called loop. 
+Loops are the first step towards real programming, they allow you to pass a command to the computer several times for different values. 
+
+
+In this case, we want to extract the relevant terms from the scores-dataset. But we always want the TOP terms, of scores being ordered accordingly. So to get the top terms for every category, we need to do three steps.
+
+  1. Order the data.frame by variable x
+  2. Extract the rownames
+  3. Store rownames in a list.
+
+We could of course do this for each variable in the data, but who wants to write code 22 times? This is a perfect example of automatization throught ITERATION.
+
+A for-loop does something for each value i in a number of values we provide. 
+
+R uses {} for anything related to so called control flow -> if you assign code to something, you can use {} to tell the computer WHAT to do. 
+
+The logic is always: 
+for(which){do what} 
+
+
+```{r}
+for(i in 1:10){print i}
+# it does not matter how you call the iterator 
+for(x in 1:10){print x}
+
+x<-10
+
+for(i in 1:x){print i}
+## you can also put functions in there
+for(i in 1:x){print (i*34)}
+
+
+```
+
+
+for(each column of dataset x){
+  1. Order the data.frame by variable x
+  2. Extract the rownames
+  3. Store rownames in a list.
+}
+
+
+```{r}
+
+keywords<-list()
+
+for(i in 1:ncol(scores)){
+  scores<-scores[order(scores[,i],decreasing = T),] #1
+  key<-rownames(scores[1:20,]) # 2
+  keyname<-names(scores)[i] #3a (give a meaningful name to list elements)
+  keywords[[i]]<-key # 3b store rownamyes
+  names(keywords)[i]<-keyname # 3c name list element 
+}
+
+
+
+
+```
+
+# KeyAtm
+
+To apply a keyword seeded topic model, we use the brandnew KeyATM package. It works directly with quanteda, which makes using it much simpler. 
+
+
+
+```{r}
+library(keyATM)
+
+keyATM_docs <- keyATM_read(texts = dfmat_matched)
+summary(keyATM_docs)
+
+```
+
+
+This will take a while!
+
+
+```{r}
+out <- keyATM(docs              = keyATM_docs,    # text input
+              no_keyword_topics = 5,              # number of topics without keywords
+              keywords          = keywords,       # keywords
+              model             = "base",         # select the model
+              options           = list(
+                                    seed = 250, # so we all get the same res
+                                    iterations=700)) # does it tell us what is happening (not working in markdown)
+
+```
+
+
+
+
+We now run a semisupervised topic model. We tell the computer we have 22 topics (our topics) and give it the leeway to find 5 more, because we assume there is other stuff in the data that was not in the manifesto. The computer now starts iterating over the data, reshuffling and recomputing hundreds of times to find the optimal allocation of documents. This is basically a cluster analysis and I will show the intuition next week in more detail.
+
+
+Let's take a look!
+
+```{r}
+
+save(out,file="topicmodel.rdata")
+
+top_words(out)
+
+```
