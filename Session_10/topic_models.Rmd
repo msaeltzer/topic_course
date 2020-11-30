@@ -1,0 +1,330 @@
+---
+  title: "Topic Models"
+author: "Marius Sältzer"
+date: "15 8 2020"
+output: html_document
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+if(!require(quanteda)){install.packages("quanteda")}
+if(!require(lubridate)){install.packages("lubridate")}
+if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(ldatuning)){install.packages("ldatuning")}
+if(!require(oolong)){install.packages("oolong")}
+if(!require(BTM)){install.packages("BTM")}
+if(!require(stm)){install.packages("stm")}
+
+require(quanteda)
+require(lubridate)
+require(topicmodels)
+require(ggplot2)
+require(ldatuning)
+require(oolong)
+require(BTM)
+library(stm)
+```
+
+For many questions in social science, it is important what media, politicians, parties or voters are talking about. It might indicate salience (the importance of a political issue) or the actor agenda (priorities). 
+
+## The Intuition of Topic Models
+
+To measure salience or agendas, we need to find out what a text is about. The answer can be complicated and multilayered, as it depends on what differences are important to your question. Typically, we can find this out by reading it. For example, we read a news article. 
+We can extract its title, its main message and its general subject. How do we do this? We associate specific words with specific issues. But of course, this is not a natural thing. 
+
+How can we infer from a text what it is about?
+  
+  ### Clustering Words
+  
+  Typically, specific words are good indicators for topics. Some words are used in any context, while others only in particular issue areas. For example the words "and" "or" etc are common to the english language and exist in any context. Other words, like "climate", "budget" or "gun" are specific to a smaller number of issues areas. 
+
+This basic concept is understood in the idea of the inverse term frequency. Each word has a distribution of use in a language and in a topic. Accordingly, we can infer whether a term belongs to a topic if it is more likely to occur in a topic than in the general language.
+
+We know all of this from supervised scaling. Here we know that there are categories in which words fit. However, now we change something: we can not observe the categories in which words belong, instead we only know two things. 
+
+1) What document a word is in
+2) What other words are in that document
+
+We will therefore create categories by searching up clusters of words that occur overproportionally often together in the same document. 
+
+
+### Example
+
+John is a refugee from Syria. He travelled across Turkey and was detained in a camp for three weeks. He was granted asylum in Germany. 
+
+John is a  from  He travelled across  and was in a  for three weeks. He was granted  in  
+
+
+will cluster the words refugee, syria, camp, asylum.
+
+If we read the next text
+
+Refugees are often not allowed to work. They live in small housing facilities and are allowed to leave only for brief periods of time. Asylum is not meant to assimilate them into the labor market.
+Many Germans are skeptical about the muslims fitting with German culture, leading to a surge in right-wing party votes. 
+
+The words refugee and asylum are here connected to muslim, culture, right wing. 
+
+
+## Meeting LDA
+
+
+A clustering algorithm for words!
+  
+  Now back to the question of "topics". How can we find out to which topic a specific text belongs. As we saw above, different newspaper articles about different things use different words and we prepared the data to a degree that we can now "count" the words and categorize.
+
+The idea is simple: text is generated based on underlying latent "topics" and allocates words accordingly. To understand what topic a text has, we need to understand how the text was generated from topics.
+
+
+# A Brief Introduction in Bayesian Statistics
+
+Most of you have learned statistics in their basic courses. This is usually called frequentist statistics. It is based on the idea of probability that if you repeat a random experiment infinite times, probability of an event is how often this would happen. Bayesian statistics is a different interpretation of probability. This is a gross simplification, but it deals more with an informational interpretation of probability. 
+
+Let's assume a 2 meter tall man enters the room. How tall are men? 
+
+- Probably, you will remember that men average about 1,80m in Germany, therefore you will assume this is just a statistical deviation. This existing information that is accumulated in your brain is called a PRIOR. You will not change your assumption about men in Germany based on this one observation. However, if you walk around in Germany and keep meeting 2 meter tall people all the time, you will start updating your PRIOR. After each observation, you have a tiny bit more information and let it influence your prior to become your POSTERIOR 
+
+
+ Let's assume you are on a foreign planet. A 2 meter tall room enters the room. How tall are men on this foreign planet? 
+  
+  - In this case you have no assumption about the size of persons. You have an uninformative prior. Each time you see a new person, it will influence your assumption about the typical size of people. As you have a weak prior, you update your POSTERIOR.
+
+
+I explain this because many estimation techniques we dealt with implicitely rely on this idea of PRIOR - new information - UPDATE - posterior. And so does the topic model. For our text classification this analogy is very fitting. If I assume any text to be of a certain category, would I change my opinion about it if I read it? If so, what new information led to the change? And how do I classify it afterwards? 
+  
+  
+```{r}
+
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_8/CAP_UK.rdata"))
+
+texts(uk_corp)[1:10]
+
+```
+
+
+```{r}
+
+library(stm)
+
+processed <- textProcessor(texts(uk_corp),metadata = docvars(uk_corp))
+
+out <- prepDocuments(processed$documents, processed$vocab,processed$meta)
+
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+
+```
+## LDA
+
+
+To do this, we will use the most extensively used algorithm for topic models, LDA
+
+
+Types of Topic Models:
+  
+  
+  Single Member versus Multimember
+
+
+Classic: Latent Derichlet Allocation
+
+Latent = Topics are underyling theoretical constructs which generate text
+
+Derichlet = Fancy Bayesian Version of a Mulitnominal Distribution (conjugate prior)
+
+Allocation = Allocates each text in a 
+
+It starts by giving each document a random class, checks the results and reiterates (a lot!).
+
+
+Instead of using LDA, we use the much faster STM package, which does the same just faster. 
+
+```{r}
+fit1 <- stm(out$documents, # the documents
+            out$vocab, # the words
+            K = 23, # 23 topics
+            max.em.its = 100,
+            # set to run for a maximum of 75 EM iterations
+            data = out$meta, # all the variables (we're not actually including any predictors in this model, though)
+            init.type = "Spectral")  # uses some sort of svd
+
+save(fit1,file="stm.rdata")
+```
+
+To run a topic model, you just need to provide the dfm and the number of topics you assume. This might take some time!
+
+How does it work? We tell the computer how many topics are in a corpus. He will compute the probability of each document to be generated by each topic i.e. we get a score for each document x topic, just like in SL.
+
+Supervised classification uses a hard prior and learns terms, and then applies it to new text. Unsupervised classification on the other hand uses an uninformative prior and assumes that any document belongs to a random choice of k categories. 
+
+Then, it checks each word for two things: first, in which document does it occur and second which topics occur in the document. Based on these who empirical observations, we can now change the "topic" of the word. As I said we start with a random distribution.
+
+If we repeat this process over and over again, words that occur in documents which contain the same words are assigned to a topic. By starting with a random distribution and "reshuffling" the relationship between topic to words and documents, we cluster together words that occur along one another. 
+
+This is also the reason why this takes so long ;)
+
+
+```{r}
+
+fit0 <- stm(out$documents, # the documents
+            out$vocab, # the words
+            K = 23, # 23 topics
+            max.em.its = 100,
+            content =~ party, 
+            prevalence =~ year,
+            # set to run for a maximum of 75 EM iterations
+            data = out$meta, # all the variables (we're not actually including any predictors in this model, though)
+            init.type = "Spectral")  # uses some sort of svd
+
+```
+
+
+If this takes to long, you can just load the final model.
+
+```{r}
+load("ukfullmodel_20.rdata")
+
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_10/ukfullmodel_20.rdata"))
+
+```  
+
+### Eyeballing
+
+The first step is that we try to label the topics. Let's take a look on the main terms!
+  
+```{r}
+
+stm::labelTopics(fit0)
+
+```
+
+```{r}
+plot.STM(fit0, type = "summary") 
+
+```
+
+
+
+
+## Validating Topic Models
+
+Now the question is, does this make sense? Since topic models are unsupervised models, validation is the most important step. As many scholars argue, it is mainly a "reading support" and little more. There are two major problems, which are all based on the numbers of topics we choose: are topics which are actually distinct clustered in the same category? Or are topics spread over multiple categories? Did we choose to many topics or to few? Are topics so imbalanced that the computer picked up numerous subtopics of let's say migration but only one topic of foreign affairs? Are foreign affairs and migration clustered into one topic?
+
+To answer these questions, we need to carefully examine results. 
+
+
+
+
+### Plotting the Issue Relations 
+
+
+```{r}
+ldasubjects <- as.data.frame(lda.model@beta) %>% 
+  scale() %>% 
+  dist(method = "euclidean") %>% 
+  hclust(method = "ward.D2")
+par(mar = c(0, 4, 4, 2))
+plot(ldasubjects)
+```
+
+
+All topic models we encounter here play around with this idea, depeding on the exact application, with some additions. 
+
+LDA -> basic
+STM -> ability to include metadata in your estimation
+keyATM -> we "inform" the priors with words (http://www.structuraltopicmodel.com/)
+BTM -> better for short text 
+
+
+
+
+
+## Research Questions
+
+I want you to develop research questions. Focus should be on topical content. You will need to classify text for the third problem set and can use the commented version of the results as a basis, but you can also use coded data or something comparable. 
+
+
+Here I have some ideas for general approaches to papers.
+
+# Mere Description
+
+I find it completely ok to do a nice descriptive paper. Classifying data is for itself a daunting task and a nice description and discussion of validity of different approaches is totally fine!
+  
+  
+  What issues are important to parties? 
+  What is in the Newspapers? 
+  What are politicians talking about in social media?
+  
+  News:
+  - News-corpus in english
+
+How do events effect Salience?
+  
+  Social Media: 
+  - I can provide you with large scale Twitter corpora from
+Germany
+MPs
+MdL
+US
+House
+Senate
+Candidates 2020 Election
+UK
+House of Commons
+
+Parliaments:
+  
+  Speeches (Parlspeech)
+Parliamentary Questions
+
+Manifestos
+Coded Data
+CMP
+CAP
+
+
+# Riding the Wave and Agenda Setting 
+
+More theory driven in this course would be the testing of hypotheses around issue ownership etc. 
+
+Do parties respond to changes in polls?
+  
+  Do they respond to other parties?
+  
+  
+  # How do events effect Salience?
+  
+  As we talked about, often event induce saliency shifts. 
+
+Example Questions:
+  
+  How did the Corona virus affect politics?
+  
+  Is there a Greta effect?
+  
+  How do school shootings affect political parties in the US?
+  
+  
+  
+  
+  # How do individual MPs differ 
+  
+  We can also analyze what determines individual emphasis. Are some politicians more specialized on certain issues? 
+  
+  Example Questions:
+  
+  Is there something like "personal" issue ownership.
+
+Can we predict committee membership?
+  
+  Are politicians responding to the grievances of their districts? 
+  
+  
+  If you are planning to do your Bachelor's thesis, this can be the basis for it.
+
