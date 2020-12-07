@@ -28,11 +28,6 @@ They should correspond to the categories we would code (Gold Standard) -> Is the
 
 They documents classification should match our expectations to some degree (Predictive Validity) -> A topic on storms should be more prevalent in times of Hurricanes
 
-
-
-
-
-
 To get a better understanding of how wrong topic models can be, we need to find ways to validate them. 
 
 
@@ -59,7 +54,9 @@ require(BTM)
 Let's use the LDA model to run a topic model on this data (or just load the topic model from github). We use k=23 because based on the coding scheme we could assume there are 23 topics in the data. So let's evaluate this. 
 
 ```{r}
-load("uk_man.rdata")
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/uk_man.rdata"))
+
 dft<-convert(dfc,to="topicmodels") # this will drop empty documents!
 
 rs<-rowSums(dfc)>0
@@ -70,7 +67,12 @@ d1<-docvars(dfc)
 #lda.modell<-LDA(dft,k=23)
 
 #save(lda.modell,file="lda_modell.rdata")
-load("lda_modell.rdata")
+```
+
+
+```{r}
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/lda_modell.rdata"))
 
 d1$lda<-topics(lda.modell)
 
@@ -98,30 +100,33 @@ llk<-lda.modell@loglikelihood
 However, loglikelihood is not an absolute measure like a R-squared. It only allows comparison between models. 
 
 
-
-
-
 ### Selecting the best model
 
 So how can we "tune" a topic model? Well, we can brute force all topic numbers and automatically check semantic coherence and exclusivity, over and over again until we find the best. 
 
 ```{r}
-library(ldatuning)
-result <- FindTopicsNumber(
-  dfc,
-  topics = seq(from = 15, to = 50, by = 1),
-  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-  method = "Gibbs",
-  control = list(seed = 77),
-  mc.cores = 2L,
-  verbose = TRUE
-)
+#library(ldatuning)
+#result <- FindTopicsNumber(
+#  dfc,
+#  topics = seq(from = 15, to = 50, by = 1),
+#  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+#  method = "Gibbs",
+#  control = list(seed = 77),
+#  mc.cores = 2L,
+#  verbose = TRUE
+#)
 
 ```
 
 
 
 ```{r}
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/modelnumber_large.rdata"))
+
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/modelnumber_small.rdata"))
+
+
 FindTopicsNumber_plot(result2)
 
 FindTopicsNumber_plot(result)
@@ -130,12 +135,6 @@ FindTopicsNumber_plot(result)
 ```
 
 We see that the llk gets better up around 50 and then sinks again, while the optimal point for the minimizers seems to be around 100 topics. Let's try those out.  
-
-```{r}
-
-load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_8/CAP_UK.rdata"))
-
-```
 
 Because this is faster and, later on with cooler visualizations, we will use the stm package again. 
 
@@ -156,7 +155,7 @@ out <- convert(dfc, to = "stm")
               # set to run for a maximum of 100 EM iterations
               data = out$meta, # all the variables (we're not actually including any predictors in this model, though)
               init.type = "Spectral")  # uses some sort of svd
-save(fit23,file="stm23.rdata")
+#save(fit23,file="stm23.rdata")
 ```
 
 ```{r}
@@ -170,13 +169,10 @@ save(fit23,file="stm23.rdata")
 
 ```
 
-
-## Semantic Validity
-
+## Semantic validation of TOPICS 
 
 
-
-### Exclusivity and Coherence  
+### Exclusivity and Coherence 
 
 
 
@@ -185,6 +181,11 @@ A more formal way to do this is the analysis of topics by specific quantities. F
 
 
 ```{r}
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/stm23.rdata"))
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_11/stm50.rdata"))
+
 stm::semanticCoherence(fit50,documents = out$documents)
 
 ```
@@ -200,14 +201,6 @@ stm::plot.STM(fit50)
 stm::topicQuality(fit50, out$documents, xlab = "Semantic Coherence", ylab = "Exclusivity")
 ```
 
-
-
-```{r}
-pl
-```
-
-
-## Semantic validation
 
 
 We can check if certain words are in specific topics. 
@@ -232,7 +225,7 @@ We have learned to know some tools to dig further in our topics. Now we can find
 
 
 
-### Testing your model 
+### Systematic Semantic Validation
 
 Now, as we have found our favorite model, let's see whether this is as valid as we might assume from simple topic inspection. Of course, some categories make sense, while others may not, but does "making sense" really can tell us more than eyeballing? 
 
@@ -241,7 +234,6 @@ This practice has often been described as "reading tea leaves" following the ana
 ```{r}
 library(oolong)
 o1<-oolong::create_oolong(fit50)
-
 
 ```
 
@@ -256,20 +248,69 @@ Afterwards, we lock the object and print the result.
 o1$lock()
 o1$print()
 ``` 
-And find out how precisely we could identify the intruder.
+And find out how precisely we could identify the intruder. 
+
+### Data for your Term Papers
+
+To answer your research questions, you need to rely on data of some sort. To maximize your access to it, I will provide you with some sources.
 
 
+## Already coded data 
 
-Twitter dataset
-
-Speeches dataset 
-
-Manifesto API
+The easiest way to deal with this kind of data is using already coded. If you don't use text analysis of any sort and only rely on already coded 
 
 
+### CAP
+
+The comparative agenda project offers numerous interesting datasets of coded documents from news articles, parliamentary questions, laws and bills to manifestos. The data can be found here. This is particularly useful if you are interest in using types of semisupervised classification. 
+
+https://www.comparativeagendas.net/datasets_codebooks
+
+### CMP
+
+The comparative manifesto data is a little bit more limited in scope, but has a lot more detail and breadth in terms of countries. The easiest way to access is it using the manifesto API. To get access, you simply visit https://manifesto-project.wzb.eu/information/documents/manifestoR and apply for an API key (which you will receive immediately via email)
+
+Assign your key as a string to the key variable and run the example code to access coded manifestos for Germany and UK.
 
 
+```{r}
+if(!require(manifestoR)){install.packages("manifestoR")}
+library(manifestoR)
 
+key<-''
+
+mp_setapikey(key=key)
+
+set<-mp_maindataset()
+
+germany<- set[set$countryname=='Germany',]
+germany<-germany[germany$date<201600,]
+germany<-germany[germany$date>198300,]
+
+uk<- set[set$countryname=='United Kingdom',]
+uk<-uk[uk$date<201600,]
+uk<-uk[uk$date>198200,]
+```
+
+Speeches datasets
+
+https://dataverse.harvard.edu/dataverse/ParlSpeech
+
+
+Subnational Manifestos
+
+http://www.polidoc.net/
+
+## Other coded 
+
+
+## Unstructured Data: Twitter data
+
+Rtweet
+
+```{r}
+
+```
 
 
 
@@ -279,7 +320,7 @@ Manifesto API
 0. Do a word intrusion test for both the 23 and the 50 topic version. 
 a. Send me the Results!
 b. Reflect what was easier mentally
-c. Check the Krippendorf's alpha and see how well the models performed in comparion!
+c. Check the Krippendorf's alpha and see how well the models performed in comparison!
 
 
 
