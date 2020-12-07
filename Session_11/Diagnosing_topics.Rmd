@@ -1,0 +1,316 @@
+---
+title: "Topic Models"
+author: "Marius Sältzer"
+date: "15 8 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Validating Topic Models
+
+Unsupervised learning is a powerful tool in times of ever growing sets of textual data. It promises autononous learning and improvement with not human interaction, which makes it scaleable, economic and fast. For young researchers and students, it allows approximating the workload otherwise only accomplished by large research projects. 
+
+However, they also come with significant disadvantages. It is never clear what kind of categories they produce, whether this relates to the true topical structure and if it makes sense in general. The clusters or dimensions produced by UL CAN be related to the analysis we want to do, but could also be produced by completely different causes. For example, if some documents use a special character in a name, while others do not, they model might see this difference as very significant and cluster them independently. 
+
+Therefore, we need to make sure that 4 conditions are fulfilled: the differences between documents need to correspond to our understanding of important differences. 
+In other words, the categories have to make sense. 
+
+
+The words connected to a topic should be coherent and exlusive. -> Terms should predict topics and have little overlap with others 
+
+They should correspond to our intuition (Semantic Validity) -> We should be able to identify wrongly assigned terms00
+
+They should correspond to the categories we would code (Gold Standard) -> Is there overlap to coded text?
+
+They documents classification should match our expectations to some degree (Predictive Validity) -> A topic on storms should be more prevalent in times of Hurricanes
+
+
+
+
+
+
+To get a better understanding of how wrong topic models can be, we need to find ways to validate them. 
+
+
+```{r}
+if(!require(quanteda)){install.packages("quanteda")}
+if(!require(lubridate)){install.packages("lubridate")}
+if(!require(topicmodels)){install.packages("topicmodels")}
+if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(ldatuning)){install.packages("ldatuning")}
+if(!require(oolong)){install.packages("oolong")}
+if(!require(BTM)){install.packages("BTM")}
+
+require(quanteda)
+require(lubridate)
+require(topicmodels)
+require(ggplot2)
+require(ldatuning)
+require(oolong)
+require(BTM)
+```
+
+### Statistical Model Quality 
+
+Let's use the LDA model to run a topic model on this data (or just load the topic model from github). We use k=23 because based on the coding scheme we could assume there are 23 topics in the data. So let's evaluate this. 
+
+```{r}
+load("uk_man.rdata")
+dft<-convert(dfc,to="topicmodels") # this will drop empty documents!
+
+rs<-rowSums(dfc)>0
+dfc<-dfm_subset(dfc,rs) # to make sure they stay comaparable we also remove empty documents from our dfm here
+
+d1<-docvars(dfc)
+
+#lda.modell<-LDA(dft,k=23)
+
+#save(lda.modell,file="lda_modell.rdata")
+load("lda_modell.rdata")
+
+d1$lda<-topics(lda.modell)
+
+```
+
+
+
+```{r}
+terms(lda.modell,15)
+```
+
+# log likelihood
+
+The most basic and standard way to evaluate a topic model is the use of statistical tools and measures provided by researchers in the field. 
+
+They evaluate the model fit, in other ways, how well does a computer model's prediction fit the data. You may know this goodness of fit argument from the R-squared of regression analysis. 
+
+So basically, the model estimates a log-likelihood for every document in the corpus, or how well it predicted the topic. 
+
+```{r}
+llk<-lda.modell@loglikelihood
+
+```
+
+However, loglikelihood is not an absolute measure like a R-squared. It only allows comparison between models. 
+
+
+
+
+
+### Selecting the best model
+
+So how can we "tune" a topic model? Well, we can brute force all topic numbers and automatically check semantic coherence and exclusivity, over and over again until we find the best. 
+
+```{r}
+library(ldatuning)
+result <- FindTopicsNumber(
+  dfc,
+  topics = seq(from = 15, to = 50, by = 1),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 77),
+  mc.cores = 2L,
+  verbose = TRUE
+)
+
+```
+
+
+
+```{r}
+FindTopicsNumber_plot(result2)
+
+FindTopicsNumber_plot(result)
+
+
+```
+
+We see that the llk gets better up around 50 and then sinks again, while the optimal point for the minimizers seems to be around 100 topics. Let's try those out.  
+
+```{r}
+
+load(url("https://github.com/msaeltzer/topic_course/raw/master/Session_8/CAP_UK.rdata"))
+
+```
+
+Because this is faster and, later on with cooler visualizations, we will use the stm package again. 
+
+```{r}
+
+
+library(stm)
+out <- convert(dfc, to = "stm")
+```
+
+
+
+```{r}
+  fit23 <- stm(out$documents, # the documents
+              out$vocab, # the words
+              K = 23, # 23 topics
+              max.em.its = 100,
+              # set to run for a maximum of 100 EM iterations
+              data = out$meta, # all the variables (we're not actually including any predictors in this model, though)
+              init.type = "Spectral")  # uses some sort of svd
+save(fit23,file="stm23.rdata")
+```
+
+```{r}
+  fit50 <- stm(out$documents, # the documents
+              out$vocab, # the words
+              K = 50, # 23 topics
+              max.em.its = 100,
+              # set to run for a maximum of 100 EM iterations
+              data = out$meta, # all the variables (we're not actually including any predictors in this model, though)
+              init.type = "Spectral")  # uses some sort of svd
+
+```
+
+
+## Semantic Validity
+
+
+
+
+### Exclusivity and Coherence  
+
+
+
+A more formal way to do this is the analysis of topics by specific quantities. For this, we will make use of the stm package. Stm contains tools to run "structural" topic models which allow including meta data in your estimation. For this lecture, we do not need this, but we will use other tools provided here: measures of exclusivity and coherence. Coherence means that the typical terms of a topic are closely related. Exclusivity means that the typical terms of a topic do not occur in other topics. A perfectly coherent and exclusive model would be if there were three categories: migration, unions and traffic. In every text on migration, you would have the term migrant, in every text on unions union etc. At the same time, these words would NOT be present in the other categories. In other words, we could identify the topic simply by knowing this single word and checking whether it occured. STM offers tools to do this for any topic.  
+
+
+
+```{r}
+stm::semanticCoherence(fit50,documents = out$documents)
+
+```
+
+
+```{r}
+stm::plot.STM(fit50)
+```
+
+```{r}
+
+# calculate semantic coherence and exclusivity scores
+stm::topicQuality(fit50, out$documents, xlab = "Semantic Coherence", ylab = "Exclusivity")
+```
+
+
+
+```{r}
+pl
+```
+
+
+## Semantic validation
+
+
+We can check if certain words are in specific topics. 
+
+```{r}
+findTopic(fit50,"children")
+```
+
+Next, we can take a look at "representative" documents from the corpus. 
+
+```{r}
+
+load("corpus.rdata")
+uk_corp<-corpus_subset(uk_corp,rs)
+findThoughts(fit50,texts=texts(uk_corp))
+
+```
+
+
+
+We have learned to know some tools to dig further in our topics. Now we can find out if it is really the optimal number of topics and whether the results are valid.
+
+
+
+### Testing your model 
+
+Now, as we have found our favorite model, let's see whether this is as valid as we might assume from simple topic inspection. Of course, some categories make sense, while others may not, but does "making sense" really can tell us more than eyeballing? 
+
+This practice has often been described as "reading tea leaves" following the analogy by Chang et. al. 2009. To validate topic models, they suggest a number of tests to make sure our topics are valid. This can be administrated by the oolong package. 
+
+```{r}
+library(oolong)
+o1<-oolong::create_oolong(fit50)
+
+
+```
+
+Chang et. al. suggest so called word intrusion tests: if we can't find out which word does not belong to a topic, we can't be sure that our topics are assigned correctly. If we do not observe an influential word from another topic as being "wrong", it might lead to miscategorization in many cases. It fights the human instinct to see affirmative information while ignoring the rest. The word intrusion test will give you one list of words per topic where you need to spot the intruder word. 
+
+```{r}
+o1$do_word_intrusion_test()
+```
+Afterwards, we lock the object and print the result.
+
+```{r}
+o1$lock()
+o1$print()
+``` 
+And find out how precisely we could identify the intruder.
+
+
+
+Twitter dataset
+
+Speeches dataset 
+
+Manifesto API
+
+
+
+
+
+
+
+
+
+### Problem Set
+
+0. Do a word intrusion test for both the 23 and the 50 topic version. 
+a. Send me the Results!
+b. Reflect what was easier mentally
+c. Check the Krippendorf's alpha and see how well the models performed in comparion!
+
+
+
+
+1. Define your question
+
+The first part of your task you already fulfilled. Definde your research question and mail it to me, I will comment on it! Then, please write a short abstract of your RQ (100-200 words)
+
+
+
+2. Find your data
+
+Use the sources I suggest and build the data set. Clean it, define subsets if necessary, check the coding, check for outliers or falsely coded values. Basically clean your data.
+
+
+3. Build your Data Set
+
+
+  Coded Data -  If you use coded data (no text analysis), I require you to actually test a hypothesis, accordingly, you will likely need to merge on data. Reflect on disadvantages and advantages of the used coding scheme. Compare it to exisiting alternatives. Combine it with the data of your independent variables.
+
+
+  Coded Text - Reflect on disadvantages and advantages of the used coding scheme. Check semantic coherence (how well do words predict categories)
+  
+
+  Uncoded Text - Reflect on the correct number of topics. Run a semi- or unsupervised classifier on your text and diagnose it!
+
+
+4. Visualize all your main Variables in a way that makes sense!
+
+
+
+
+
+
